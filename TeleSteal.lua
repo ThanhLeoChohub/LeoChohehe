@@ -1,391 +1,195 @@
--- Danbeo Teleport // Cyberpunk Mobile Edition
--- Optimized for Mobile Executors (Delta, Vega X, Fluxus, Codex...)
--- Author: Grok (Custom Built for Request)
-
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+-- [[ DANBEO TELEPORT // CYBERPUNK MOBILE LIGHTWEIGHT ]]
+local UIS = game:GetService("UserInputService")
+local TS = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
-local RunService = game:GetService("RunService")
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local PlayerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or game:GetService("CoreGui")
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local FILE_NAME = "DanbeoTeleport_Config.json"
+local SavedCFrame = nil
 
-local CONFIG_FILE = "DanbeoTeleport_Config.json"
-local SAVED_CFRAME = nil
+-- Hủy UI cũ nếu chạy lại script
+if PlayerGui:FindFirstChild("DanbeoTeleport") then PlayerGui["DanbeoTeleport"]:Destroy() end
 
--- ==================== UI COLORS (Cyberpunk Neon Orange) ====================
-local COLOR_BG = Color3.fromRGB(14, 14, 16)
-local COLOR_ACCENT = Color3.fromRGB(255, 140, 0)   -- Neon Orange
-local COLOR_ACCENT_DARK = Color3.fromRGB(200, 80, 0)
-local COLOR_TEXT = Color3.fromRGB(255, 255, 255)
-local COLOR_STROKE = Color3.fromRGB(255, 180, 50)
+-- KHỞI TẠO UI CHÍNH
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "DanbeoTeleport"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
 
--- ==================== CREATE SCREEN GUI ====================
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "DanbeoTeleportGUI"
-screenGui.ResetOnSpawn = false
-screenGui.IgnoreGuiInset = true
-screenGui.Parent = playerGui
-
--- ==================== MAIN FRAME ====================
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 320, 0, 280)
-mainFrame.Position = UDim2.new(0.5, -160, 0.5, -140)
-mainFrame.BackgroundColor3 = COLOR_BG
-mainFrame.BorderSizePixel = 0
-mainFrame.ZIndex = 10
-mainFrame.Parent = screenGui
-
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 12)
-mainCorner.Parent = mainFrame
-
-local mainStroke = Instance.new("UIStroke")
-mainStroke.Thickness = 2
-mainStroke.Color = COLOR_STROKE
-mainStroke.Transparency = 0.3
-mainStroke.Parent = mainFrame
-
--- Title Bar
-local titleBar = Instance.new("Frame")
-titleBar.Name = "TitleBar"
-titleBar.Size = UDim2.new(1, 0, 0, 40)
-titleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-titleBar.BorderSizePixel = 0
-titleBar.Parent = mainFrame
-
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 12)
-titleCorner.Parent = titleBar
-
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -100, 1, 0)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "DANBEO TELEPORT"
-titleLabel.TextColor3 = COLOR_ACCENT
-titleLabel.TextScaled = true
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.Parent = titleBar
-
--- Close Button
-local closeBtn = Instance.new("TextButton")
-closeBtn.Name = "CloseBtn"
-closeBtn.Size = UDim2.new(0, 30, 0, 30)
-closeBtn.Position = UDim2.new(1, -35, 0, 5)
-closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-closeBtn.Text = "✕"
-closeBtn.TextColor3 = Color3.new(1, 1, 1)
-closeBtn.TextScaled = true
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.Parent = titleBar
-
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 8)
-closeCorner.Parent = closeBtn
-
--- Minimize Button
-local minimizeBtn = Instance.new("TextButton")
-minimizeBtn.Name = "MinimizeBtn"
-minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
-minimizeBtn.Position = UDim2.new(1, -70, 0, 5)
-minimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-minimizeBtn.Text = "—"
-minimizeBtn.TextColor3 = Color3.new(1, 1, 1)
-minimizeBtn.TextScaled = true
-minimizeBtn.Font = Enum.Font.GothamBold
-minimizeBtn.Parent = titleBar
-
-local minCorner = Instance.new("UICorner")
-minCorner.CornerRadius = UDim.new(0, 8)
-minCorner.Parent = minimizeBtn
-
--- Content Frame
-local contentFrame = Instance.new("Frame")
-contentFrame.Name = "Content"
-contentFrame.Size = UDim2.new(1, -20, 1, -55)
-contentFrame.Position = UDim2.new(0, 10, 0, 45)
-contentFrame.BackgroundTransparency = 1
-contentFrame.Parent = mainFrame
-
--- Section Title
-local sectionLabel = Instance.new("TextLabel")
-sectionLabel.Size = UDim2.new(1, 0, 0, 30)
-sectionLabel.BackgroundTransparency = 1
-sectionLabel.Text = "Coordinate System"
-sectionLabel.TextColor3 = COLOR_TEXT
-sectionLabel.TextScaled = true
-sectionLabel.Font = Enum.Font.GothamSemibold
-sectionLabel.Parent = contentFrame
-
--- Save Button
-local saveBtn = Instance.new("TextButton")
-saveBtn.Name = "SaveBtn"
-saveBtn.Size = UDim2.new(1, 0, 0, 55)
-saveBtn.Position = UDim2.new(0, 0, 0, 40)
-saveBtn.BackgroundColor3 = COLOR_ACCENT_DARK
-saveBtn.Text = "Save Current Position"
-saveBtn.TextColor3 = COLOR_TEXT
-saveBtn.TextScaled = true
-saveBtn.Font = Enum.Font.GothamBold
-saveBtn.Parent = contentFrame
-
-local saveCorner = Instance.new("UICorner")
-saveCorner.CornerRadius = UDim.new(0, 10)
-saveCorner.Parent = saveBtn
-
-local saveStroke = Instance.new("UIStroke")
-saveStroke.Thickness = 1.5
-saveStroke.Color = COLOR_ACCENT
-saveStroke.Parent = saveBtn
-
--- Teleport Button
-local tpBtn = Instance.new("TextButton")
-tpBtn.Name = "TeleportBtn"
-tpBtn.Size = UDim2.new(1, 0, 0, 55)
-tpBtn.Position = UDim2.new(0, 0, 0, 105)
-tpBtn.BackgroundColor3 = COLOR_ACCENT_DARK
-tpBtn.Text = "Teleport to Saved Position"
-tpBtn.TextColor3 = COLOR_TEXT
-tpBtn.TextScaled = true
-tpBtn.Font = Enum.Font.GothamBold
-tpBtn.Parent = contentFrame
-
-local tpCorner = Instance.new("UICorner")
-tpCorner.CornerRadius = UDim.new(0, 10)
-tpCorner.Parent = tpBtn
-
-local tpStroke = Instance.new("UIStroke")
-tpStroke.Thickness = 1.5
-tpStroke.Color = COLOR_ACCENT
-tpStroke.Parent = tpBtn
-
--- ==================== MINI ICON ====================
-local miniIcon = Instance.new("Frame")
-miniIcon.Name = "MiniIcon"
-miniIcon.Size = UDim2.new(0, 60, 0, 60)
-miniIcon.Position = UDim2.new(0.9, -30, 0.8, -30)
-miniIcon.BackgroundColor3 = COLOR_ACCENT
-miniIcon.BorderSizePixel = 0
-miniIcon.Visible = false
-miniIcon.ZIndex = 20
-miniIcon.Parent = screenGui
-
-local iconCorner = Instance.new("UICorner")
-iconCorner.CornerRadius = UDim.new(1, 0) -- Circle
-iconCorner.Parent = miniIcon
-
-local iconLabel = Instance.new("TextLabel")
-iconLabel.Size = UDim2.new(1, 0, 1, 0)
-iconLabel.BackgroundTransparency = 1
-iconLabel.Text = "📍"
-iconLabel.TextColor3 = Color3.new(0, 0, 0)
-iconLabel.TextScaled = true
-iconLabel.Font = Enum.Font.GothamBold
-iconLabel.Parent = miniIcon
-
-local iconStroke = Instance.new("UIStroke")
-iconStroke.Thickness = 3
-iconStroke.Color = Color3.new(1, 1, 1)
-iconStroke.Parent = miniIcon
-
--- ==================== NOTIFICATION SYSTEM ====================
-local function createNotification(text: string, isError: boolean)
-	local notif = Instance.new("Frame")
-	notif.Size = UDim2.new(0, 280, 0, 60)
-	notif.Position = UDim2.new(1, -300, 0, 20)
-	notif.BackgroundColor3 = isError and Color3.fromRGB(180, 40, 40) or COLOR_ACCENT_DARK
-	notif.BorderSizePixel = 0
-	notif.ZIndex = 100
-	notif.Parent = screenGui
-	
-	local nCorner = Instance.new("UICorner")
-	nCorner.CornerRadius = UDim.new(0, 10)
-	nCorner.Parent = notif
-	
-	local nStroke = Instance.new("UIStroke")
-	nStroke.Thickness = 2
-	nStroke.Color = COLOR_ACCENT
-	nStroke.Parent = notif
-	
-	local nText = Instance.new("TextLabel")
-	nText.Size = UDim2.new(1, -20, 1, 0)
-	nText.Position = UDim2.new(0, 10, 0, 0)
-	nText.BackgroundTransparency = 1
-	nText.Text = text
-	nText.TextColor3 = Color3.new(1, 1, 1)
-	nText.TextScaled = true
-	nText.Font = Enum.Font.GothamSemibold
-	nText.TextXAlignment = Enum.TextXAlignment.Left
-	nText.Parent = notif
-	
-	-- Slide in
-	notif:TweenPosition(UDim2.new(1, -290, 0, 20), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.4, true)
-	
-	task.delay(3, function()
-		if notif and notif.Parent then
-			notif:TweenPosition(UDim2.new(1, 10, 0, 20), Enum.EasingDirection.In, Enum.EasingStyle.Quad, 0.4, true)
-			task.wait(0.4)
-			notif:Destroy()
-		end
-	end)
+-- NOTIFICATION POP-UP
+local function Notify(msg)
+    task.spawn(function()
+        local n = Instance.new("TextLabel")
+        n.Size = UDim2.new(0, 200, 0, 35)
+        n.Position = UDim2.new(0.5, -100, 0.1, 0)
+        n.BackgroundColor3 = Color3.fromRGB(14, 14, 16)
+        n.Text = msg
+        n.TextColor3 = Color3.fromRGB(255, 102, 0)
+        n.Font = Enum.Font.GothamBold
+        n.TextSize = 13
+        n.Parent = ScreenGui
+        Instance.new("UICorner", n).CornerRadius = UDim.new(0, 6)
+        Instance.new("UIStroke", n).Color = Color3.fromRGB(255, 102, 0)
+        task.wait(1.5)
+        n:Destroy()
+    end)
 end
 
--- ==================== CONFIG SYSTEM ====================
-local function saveConfig()
-	if not SAVED_CFRAME then return end
-	local data = {
-		CFrame = {
-			X = SAVED_CFRAME.Position.X,
-			Y = SAVED_CFRAME.Position.Y,
-			Z = SAVED_CFRAME.Position.Z,
-			R00 = SAVED_CFRAME.Rotation.X,
-			R01 = SAVED_CFRAME.Rotation.Y,
-			R02 = SAVED_CFRAME.Rotation.Z,
-			-- Simplified storage (full CFrame can be reconstructed)
-		}
-	}
-	
-	local success, err = pcall(function()
-		writefile(CONFIG_FILE, HttpService:JSONEncode(data))
-	end)
-	
-	if success then
-		createNotification("Position Saved to Config!", false)
-	else
-		createNotification("Failed to save config!", true)
-	end
+-- CONFIG AUTO SAVE/LOAD
+local function SaveConfig()
+    if SavedCFrame then
+        writefile(FILE_NAME, HttpService:JSONEncode({Pos = {SavedCFrame:GetComponents()}}))
+    end
 end
 
-local function loadConfig()
-	task.spawn(function()
-		if isfile(CONFIG_FILE) then
-			local success, data = pcall(function()
-				local content = readfile(CONFIG_FILE)
-				return HttpService:JSONDecode(content)
-			end)
-			
-			if success and data and data.CFrame then
-				local cfData = data.CFrame
-				SAVED_CFRAME = CFrame.new(cfData.X, cfData.Y, cfData.Z)
-				createNotification("Loaded saved position from config", false)
-			end
-		end
-	end)
+task.spawn(function()
+    if isfile and isfile(FILE_NAME) then
+        local success, data = pcall(function() return HttpService:JSONDecode(readfile(FILE_NAME)) end)
+        if success and data and data.Pos then
+            SavedCFrame = CFrame.new(unpack(data.Pos))
+            Notify("Config Loaded!")
+        end
+    end
+end)
+
+-- MENU CHÍNH
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 280, 0, 180)
+Main.Position = UDim2.new(0.5, -140, 0.5, -90)
+Main.BackgroundColor3 = Color3.fromRGB(14, 14, 16)
+Main.Parent = ScreenGui
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
+local MainStroke = Instance.new("UIStroke", Main)
+MainStroke.Color = Color3.fromRGB(255, 102, 0)
+MainStroke.Thickness = 2
+
+-- THANH TIÊU ĐỀ (TOPBAR)
+local Top = Instance.new("Frame")
+Top.Size = UDim2.new(1, 0, 0, 35)
+Top.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
+Top.Parent = Main
+Instance.new("UICorner", Top).CornerRadius = UDim.new(0, 8)
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -70, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "DANBEO TELEPORT"
+Title.TextColor3 = Color3.fromRGB(255, 102, 0)
+Title.Font = Enum.Font.GothamBlack
+Title.TextSize = 13
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Top
+
+-- NÚT ĐÓNG (✕)
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.new(0, 30, 0, 35)
+Close.Position = UDim2.new(1, -30, 0, 0)
+Close.BackgroundTransparency = 1
+Close.Text = "✕"
+Close.TextColor3 = Color3.fromRGB(150, 150, 150)
+Close.Font = Enum.Font.GothamBold
+Close.TextSize = 14
+Close.Parent = Top
+
+-- NÚT THU NHỎ (—)
+local Mini = Instance.new("TextButton")
+Mini.Size = UDim2.new(0, 30, 0, 35)
+Mini.Position = UDim2.new(1, -60, 0, 0)
+Mini.BackgroundTransparency = 1
+Mini.Text = "—"
+Mini.TextColor3 = Color3.fromRGB(150, 150, 150)
+Mini.Font = Enum.Font.GothamBold
+Mini.TextSize = 14
+Mini.Parent = Top
+
+-- NÚT MINI ICON TRÒN SMART
+local MiniIcon = Instance.new("TextButton")
+MiniIcon.Size = UDim2.new(0, 50, 0, 50)
+MiniIcon.Position = UDim2.new(0, 20, 0, 20)
+MiniIcon.BackgroundColor3 = Color3.fromRGB(14, 14, 16)
+MiniIcon.Text = "⚡"
+MiniIcon.TextColor3 = Color3.fromRGB(255, 102, 0)
+MiniIcon.Font = Enum.Font.GothamBlack
+MiniIcon.TextSize = 22
+MiniIcon.Visible = false
+MiniIcon.Parent = ScreenGui
+Instance.new("UICorner", MiniIcon).CornerRadius = UDim.new(1, 0)
+local IconStroke = Instance.new("UIStroke", MiniIcon)
+IconStroke.Color = Color3.fromRGB(255, 102, 0)
+IconStroke.Thickness = 2
+
+-- KHU VỰC CHỨC NĂNG (SECTION)
+local SaveBtn = Instance.new("TextButton")
+SaveBtn.Size = UDim2.new(1, -20, 0, 40)
+SaveBtn.Position = UDim2.new(0, 10, 0, 55)
+SaveBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+SaveBtn.Text = "Save Current Position"
+SaveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SaveBtn.Font = Enum.Font.GothamBold
+SaveBtn.TextSize = 13
+SaveBtn.Parent = Main
+Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 6)
+
+local TeleBtn = Instance.new("TextButton")
+TeleBtn.Size = UDim2.new(1, -20, 0, 40)
+TeleBtn.Position = UDim2.new(0, 10, 0, 110)
+TeleBtn.BackgroundColor3 = Color3.fromRGB(255, 102, 0)
+TeleBtn.Text = "Teleport to Saved Position"
+TeleBtn.TextColor3 = Color3.fromRGB(14, 14, 16)
+TeleBtn.Font = Enum.Font.GothamBlack
+TeleBtn.TextSize = 13
+TeleBtn.Parent = Main
+Instance.new("UICorner", TeleBtn).CornerRadius = UDim.new(0, 6)
+
+-- HÀM KÉO THẢ MƯỢT CHỐNG LAG
+local function Drag(frame, handle)
+    local drag, inputStart, startPos
+    handle.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            drag = true; inputStart = i.Position; startPos = frame.Position
+            i.Changed:Connect(function() if i.UserInputState == Enum.UserInputState.End then drag = false end end)
+        end
+    end)
+    UIS.InputChanged:Connect(function(i)
+        if drag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+            local delta = i.Position - inputStart
+            TS:Create(frame, TweenInfo.new(0.05, Enum.EasingStyle.Linear), {
+                Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            }):Play()
+        end
+    end)
 end
+Drag(Main, Top)
+Drag(MiniIcon, MiniIcon)
 
--- ==================== DRAGGABLE FUNCTION (Optimized) ====================
-local function makeDraggable(frame: Frame, dragBar: Frame?)
-	local dragBar = dragBar or frame
-	local dragging = false
-	local dragInput: InputObject
-	local dragStart: Vector3
-	local startPos: UDim2
-	
-	local function updateInput(input: InputObject)
-		if dragging then
-			local delta = input.Position - dragStart
-			local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-			frame.Position = newPos
-		end
-	end
-	
-	dragBar.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			dragging = true
-			dragStart = input.Position
-			startPos = frame.Position
-			
-			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					dragging = false
-				end
-			end)
-		end
-	end)
-	
-	dragBar.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-			dragInput = input
-		end
-	end)
-	
-	UserInputService.InputChanged:Connect(function(input)
-		if input == dragInput and dragging then
-			updateInput(input)
-		end
-	end)
-end
+-- XỬ LÝ SỰ KIỆN
+Mini.MouseButton1Click:Connect(function() Main.Visible = false; MiniIcon.Visible = true end)
+MiniIcon.MouseButton1Click:Connect(function() MiniIcon.Visible = false; Main.Visible = true end)
+Close.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
--- ==================== BUTTON FUNCTIONALITY ====================
-saveBtn.MouseButton1Click:Connect(function()
-	local character = player.Character
-	if not character then 
-		createNotification("Character not loaded!", true)
-		return 
-	end
-	
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if not root then 
-		createNotification("HumanoidRootPart not found!", true)
-		return 
-	end
-	
-	SAVED_CFRAME = root.CFrame
-	saveConfig()
-	createNotification("Position Saved!", false)
+SaveBtn.MouseButton1Click:Connect(function()
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if root then
+        SavedCFrame = root.CFrame
+        SaveConfig()
+        Notify("Position Saved!")
+    else
+        Notify("Character Not Found!")
+    end
 end)
 
-tpBtn.MouseButton1Click:Connect(function()
-	local character = player.Character
-	if not character then 
-		createNotification("Character not loaded!", true)
-		return 
-	end
-	
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if not root then 
-		createNotification("HumanoidRootPart not found!", true)
-		return 
-	end
-	
-	if not SAVED_CFRAME then
-		createNotification("No Saved Position Found!", true)
-		return
-	end
-	
-	root.CFrame = SAVED_CFRAME
-	createNotification("Teleported to Saved Position!", false)
+TeleBtn.MouseButton1Click:Connect(function()
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if root then
+        if SavedCFrame then
+            root.CFrame = SavedCFrame
+            Notify("Teleported!")
+        else
+            Notify("No Saved Position!")
+        end
+    else
+        Notify("Character Not Found!")
+    end
 end)
-
--- ==================== WINDOW CONTROLS ====================
-closeBtn.MouseButton1Click:Connect(function()
-	screenGui:Destroy()
-end)
-
-minimizeBtn.MouseButton1Click:Connect(function()
-	mainFrame.Visible = false
-	miniIcon.Visible = true
-end)
-
-miniIcon.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		mainFrame.Visible = true
-		miniIcon.Visible = false
-	end
-end)
-
--- ==================== INIT ====================
-makeDraggable(mainFrame, titleBar)
-makeDraggable(miniIcon)
-
--- Load config in background
-loadConfig()
-
--- Initial notification
-task.delay(1, function()
-	createNotification("Danbeo Teleport Loaded ✓", false)
-end)
-
-print("✅ Danbeo Teleport // Cyberpunk Mobile Edition loaded successfully!")
